@@ -1,6 +1,6 @@
 [package]
 
-name = "spotify-hard"
+name = "spotify"
 version = "0.0.1"
 authors = ["Marcus Klaas <mail@marcusklaas.nl>"]
 
