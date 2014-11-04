@@ -1,6 +1,5 @@
 extern crate spotify;
 
-use std::io;
 use spotify::voter_input;
 use spotify::voter_input::Voter;
 
@@ -12,15 +11,7 @@ fn main() {
         Ok(triple) => triple
     };
     
-    let prototype_voter: Voter = voter_input::Voter {
-        favorite_species: voter_input::Cat,
-        dog_vote: 5000,
-        cat_vote: 5000
-    };
-    
-    let mut voter_list: Vec<voter_input::Voter> = Vec::from_elem(voter_count, prototype_voter);
-    
-    voter_input::fill_voter_list(voter_list.as_mut_slice(), voter_count);
+    let voter_list: Vec<voter_input::Voter> = voter_input::get_voter_list(voter_count);
     
     let dog_lovers: Vec<Voter> = voter_list.iter().filter(|&x| !x.is_cat_person()).map(|&x| x).collect();
     let cat_lovers: Vec<Voter> = voter_list.iter().filter(|&x| x.is_cat_person()).map(|&x| x).collect();

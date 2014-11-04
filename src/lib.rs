@@ -1,6 +1,17 @@
 pub mod voter_input {
     use std::io;
 
+    #[deriving(PartialEq, Clone)]
+    pub enum Species {
+        Dog,
+        Cat
+    }
+    
+    struct Pet {
+        species: Species,
+        number: uint
+    }
+
     #[deriving(Clone)]
     pub struct Voter {
         pub favorite_species: Species,
@@ -20,17 +31,6 @@ pub mod voter_input {
         }
     }
     
-    #[deriving(PartialEq, Clone)]
-    pub enum Species {
-        Dog,
-        Cat
-    }
-    
-    struct Pet {
-        species: Species,
-        number: uint
-    }
-    
     pub fn get_parameters() -> Result<(uint, uint, uint), String> {
         let input: String = io::stdin().read_line().ok().expect("Failed to read line");
         let split: Vec<&str> = input.as_slice().trim().split(' ').collect();
@@ -39,37 +39,24 @@ pub mod voter_input {
             return Err("Incorrect number of arguments!".to_string());
         }
         
-        let cat_count: uint = match from_str(split[0].as_slice()) {
-            Some(x) => x,
-            None    => {
-                return Err("Incorrect number of cats!".to_string());
-            }
-        };    
+        let parameters: Vec<Option<uint>> = split.iter().map(|&x| from_str::<uint>(x.as_slice())).collect();
         
-        let dog_count: uint = match from_str(split[1].as_slice()) {
-            Some(x) => x,
-            None    => {
-                return Err("Incorrect number of dogs!".to_string());
-            }
-        };
+        if parameters.iter().any(|&x| x == None) {
+            return Err("Input were not valid non-negative numbers!".to_string());
+        }
         
-        let voter_count: uint = match from_str(split[2].as_slice()) {
-            Some(x) => x,
-            None    => {
-                return Err("Incorrect number of voters!".to_string());
-            }
-        };
-        
-        let result: (uint, uint, uint) = (cat_count, dog_count, voter_count);
-        
-        Ok(result)
+        Ok((parameters[0].unwrap(), parameters[1].unwrap(), parameters[2].unwrap()))
     }
     
     // todo: only accept pets with number at most number of cats/ dogs
-    pub fn fill_voter_list(voter_list: &mut [Voter], voter_count: uint) {
-        for x in range(0, voter_count) {
-            voter_list[x] = get_voter();
+    pub fn get_voter_list(voter_count: uint) -> Vec<Voter> {
+        let mut voter_list = Vec::new();
+        
+        for _ in range(0, voter_count) {
+            voter_list.push(get_voter());
         }
+        
+        voter_list
     }
 
     fn get_voter() -> Voter {
