@@ -180,8 +180,29 @@ pub mod bipartite_matchings {
             }
         }
         
-        pub fn get_incidence_matrix(&self) -> &[bool] {
-            self.incidence_matrix
+        pub fn from_closure<R, C, T: Clone + Iterator<R>, U: Clone + Iterator<C>>(rows: &T, columns: &U, closure: |&R, &C| -> bool, vec: &'a mut Vec<bool>) -> BipartiteGraph<'a> {
+            vec.clear();
+            
+            let mut row_iterator = rows.clone();
+            let mut row_count = 0u;
+            
+            for row in row_iterator {
+                let mut column_iterator = columns.clone();
+                
+                for col in column_iterator {
+                    vec.push(closure(&row, &col));
+                }
+            
+                row_count += 1;
+            }
+            
+            let column_count = columns.clone().count();
+            
+            BipartiteGraph {
+                rows: row_count,
+                columns: column_count,
+                incidence_matrix: vec.as_mut_slice()
+            }
         }
         
         pub fn set_edge(&mut self, i: uint, j: uint, edginess: bool) {
@@ -248,10 +269,6 @@ pub mod bipartite_matchings {
                                 
         let edge_set: TreeSet<Edge> = unvisited_neighbours.map(|col| (row, col)).collect();
         
-        println!("Edge set size {}", edge_set.len());
-        
-        println!("Neighbour count for row {} is {}", row, range(0, columns).filter(|col| graph.has_edge(row, *col)).count());
-        
         let mut unmatched_edges = edge_set.difference(matching);
         
         for &edge in unmatched_edges {
@@ -276,8 +293,10 @@ pub mod bipartite_matchings {
     
     fn augment_column(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, column: uint) -> Option<EdgeSet> {
         let collapsed_trace = collapse_trace(trace);
+        
+        let matched_columns: TreeSet<uint> = matching.iter().map(|&(row, col)| col).collect();
     
-        if collapsed_trace.contains(&column) {
+        if ! matched_columns.contains(&column) {
             println!("Found augmenting path!");
         
             return Some(trace_to_set(trace));
@@ -333,7 +352,11 @@ pub mod bipartite_matchings {
     
     fn max_matching_size(graph: &BipartiteGraph, matching: &EdgeSet) -> uint {    
         match get_augmenting_path(graph, matching) {
-            None       => matching.len(),
+            None       => {
+                println!("Maximum matching: {}", matching);
+            
+                matching.len()
+            },
             Some(path) => {
                 let mut new_matching: EdgeSet = TreeSet::new();
                 
