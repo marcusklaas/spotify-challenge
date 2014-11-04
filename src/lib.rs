@@ -158,107 +158,197 @@ pub mod voter_input {
 
 pub mod bipartite_matchings {
     use std::collections::TreeSet;
-    use std::fmt;
     
     pub struct BipartiteGraph<'a> {
-        m: uint,
-        pub incidence_matrix: &'a mut [bool]
+        rows: uint,
+        columns: uint,
+        incidence_matrix: &'a mut [bool]
     }
     
     impl<'a> BipartiteGraph<'a> {
-        pub fn new<'a>(m: uint, n: uint, vec: &'a mut Vec<bool>) -> BipartiteGraph<'a> {
+        pub fn new<'a>(rows: uint, columns: uint, vec: &'a mut Vec<bool>) -> BipartiteGraph<'a> {
             vec.clear();
             
-            for _ in range(0, m * n) {
+            for _ in range(0, rows * columns) {
                 vec.push(false);
             }
         
             BipartiteGraph {
-                m: m,
+                rows: rows,
+                columns: columns,
                 incidence_matrix: vec.as_mut_slice()
             }
         }
         
-        pub fn set_edge(&mut self, i: uint, j: uint, edginess: bool) {
-            self.incidence_matrix[self.m * i + j] = edginess;
+        pub fn get_incidence_matrix(&self) -> &[bool] {
+            self.incidence_matrix
         }
         
-        fn get_edge(&self, i: uint, j: uint) -> bool {
-            self.incidence_matrix[self.m * i + j]
+        pub fn set_edge(&mut self, i: uint, j: uint, edginess: bool) {
+            self.incidence_matrix[self.columns * i + j] = edginess;
+        }
+        
+        fn has_edge(&self, i: uint, j: uint) -> bool {
+            self.incidence_matrix[self.columns * i + j]
+        }
+        
+        pub fn get_dimensions(&self) -> (uint, uint) {
+            (self.rows, self.columns)
         }
     }
-    
-//    impl<'a> fmt::Show for BipartiteGraph<'a> {
-//        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//            // The `f` value implements the `Writer` trait, which is what the
-//            // write! macro is expecting. Note that this formatting ignores the
-//            // various flags provided to format strings.
-//            
-//            for row in self.incidence_matrix.as_slice().chunks(self.m).collect() {
-//                writeln!(f, "{}", row);
-//            }
-//        }
-//    }
     
     trait SymmetricDifferenceSet {
         fn new_symmetric_difference(&self, other: &Self) -> Self;
     }
     
-    #[deriving(Eq, Ord, Clone)]
-    pub struct Edge(uint, uint);
+    type Edge = (uint, uint);
+    type EdgeSet = TreeSet<Edge>;
     
-    impl PartialEq for Edge {
-        fn eq(&self, other: &Edge) -> bool {
-            let Edge(self_first, self_last) = *self;
-            let Edge(other_first, other_last) = *other;
-            
-            self_first == other_first && self_last == other_last 
-            || self_first == other_last && self_last == other_first
-        }
+    fn get_unmatched_rows(graph: &BipartiteGraph, matching: &EdgeSet) -> Vec<uint> {
+        let (rows, _) = graph.get_dimensions();
+        
+        range(0, rows).filter(|&x| !is_row_matched(graph, matching, x)).collect()
     }
     
-    impl PartialOrd for Edge {
-        fn lt(&self, other: &Edge) -> bool {
-            let Edge(self_first, self_last) = *self;
-            let Edge(other_first, other_last) = *other;
-            
-            self_first < other_first
-            || self_first == other_first && self_last < other_last
+    fn is_row_matched(graph: &BipartiteGraph, matching: &EdgeSet, row: uint) -> bool {
+        let (_, columns) = graph.get_dimensions();
+        
+        range(0, columns).map(|col| (row, col)).any(|x| matching.contains(&x))
+    }
+    
+    fn collapse_trace(trace: &Vec<Edge>) -> TreeSet<uint> {
+        let mut result: TreeSet<uint> = TreeSet::new();
+        
+        for (row, col) in trace.iter().map(|&x| x) {
+            result.insert(row);
+            result.insert(col);
         }
         
-        fn partial_cmp(&self, other: &Edge) -> Option<Ordering> {
-            match self.lt(other) {
-                true  => Some(Less),
-                false => match self.eq(other) {
-                    true  => Some(Equal),
-                    false => Some(Greater)
+        result
+    }
+    
+    fn trace_to_set(trace: &Vec<Edge>) -> EdgeSet {
+        let mut set = TreeSet::new();
+        
+        for edge in trace.iter() {
+            set.insert(*edge);
+        }
+        
+        set
+    }
+    
+    fn augment_row(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, row: uint) -> Option<EdgeSet> {
+        let collapsed_trace = collapse_trace(trace);
+        
+        let (_, columns) = graph.get_dimensions();
+        
+        let unvisited_neighbours = range(0, columns)
+                                .filter(|col| graph.has_edge(row, *col))
+                                .filter(|col| !collapsed_trace.contains(col));
+                                
+        let edge_set: TreeSet<Edge> = unvisited_neighbours.map(|col| (row, col)).collect();
+        
+        println!("Edge set size {}", edge_set.len());
+        
+        println!("Neighbour count for row {} is {}", row, range(0, columns).filter(|col| graph.has_edge(row, *col)).count());
+        
+        let mut unmatched_edges = edge_set.difference(matching);
+        
+        for &edge in unmatched_edges {
+            let (_, col) = edge;
+            
+            println!("Unmatched edge {}", edge);
+            
+            trace.push(edge);
+            
+            match augment_column(graph, matching, trace, col) {
+                Some(path) => {
+                    return Some(path);
+                },
+                None => {
+                    trace.pop();
                 }
+            }
+        }
+    
+        None
+    }
+    
+    fn augment_column(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, column: uint) -> Option<EdgeSet> {
+        let collapsed_trace = collapse_trace(trace);
+    
+        if collapsed_trace.contains(&column) {
+            println!("Found augmenting path!");
+        
+            return Some(trace_to_set(trace));
+        }
+        
+        let (rows, _) = graph.get_dimensions();
+        
+        let visited_neighbours = range(0, rows)
+                                .filter(|row| graph.has_edge(*row, column))
+                                .filter(|row| collapsed_trace.contains(row));
+                                
+        let edge_set: TreeSet<Edge> = visited_neighbours.map(|row| (row, column)).collect();
+        
+        let mut matched_edges = edge_set.intersection(matching);
+        
+        for &edge in matched_edges {
+            let (row, _) = edge;
+            
+            trace.push(edge);
+            
+            match augment_row(graph, matching, trace, row) {
+                Some(path) => {
+                    return Some(path);
+                },
+                None => {
+                    trace.pop();
+                }
+            }
+        }
+    
+        None
+    }
+    
+    fn get_augmenting_path(graph: &BipartiteGraph, matching: &EdgeSet) -> Option<EdgeSet> {
+        let unmatched_rows = get_unmatched_rows(graph, matching);
+        let mut trace: Vec<Edge> = Vec::new();
+        
+        println!("Unmatched rows: {}", unmatched_rows.as_slice());
+        
+        for row in unmatched_rows.iter() {
+            match augment_row(graph, matching, &mut trace, *row) {
+                Some(path) => {
+                    return Some(path);
+                },
+                None => {
+                    trace.clear();
+                }
+            }
+        }
+      
+        None
+    }
+    
+    fn max_matching_size(graph: &BipartiteGraph, matching: &EdgeSet) -> uint {    
+        match get_augmenting_path(graph, matching) {
+            None       => matching.len(),
+            Some(path) => {
+                let mut new_matching: EdgeSet = TreeSet::new();
+                
+                for x in matching.symmetric_difference(&path) {
+                    new_matching.insert(x.clone());
+                }
+            
+                max_matching_size(graph, &new_matching)
             }
         }
     }
     
-    pub type EdgeSet = TreeSet<Edge>;
-    
-//    impl<T: Ord + Clone> SymmetricDifferenceSet for TreeSet<T> {
-//        fn new_symmetric_difference(&self, other: &TreeSet<T>) -> TreeSet<T> {
-//            let mut set = TreeSet::new();
-            
-//            for x in self.symmetric_difference(other) {
-//                set.insert(x.clone());
-//            }
+    pub fn get_max_matching_size(graph: &BipartiteGraph) -> uint {
+        let empty_matching: EdgeSet = TreeSet::new();
         
-//            set
-//        }
-//    }
-    
-//    pub fn get_augmenting_path(graph: BipartiteGraph, matching: EdgeSet) -> Option<EdgeSet> {
-//        None
-//    }
-    
-//    pub fn get_max_matching_size(graph: BipartiteGraph, matching: EdgeSet) -> int {
-//        match get_augmenting_path(graph, matching) {
-//            None       => matching.len(),
-//            Some(path) => get_max_matching_size(graph, matching.new_symmetric_difference(path))
-//        }
-//    }
+        max_matching_size(graph, &empty_matching)
+    }
 }
