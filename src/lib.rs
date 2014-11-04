@@ -2,46 +2,26 @@ pub mod voter_input {
     use std::io;
 
     #[deriving(Clone)]
-    pub struct DogLover {
-        pub favorite_dog: uint,
-        pub hated_cat: uint
-    }
-
-    #[deriving(Clone)]
-    pub struct CatLover {
-        pub favorite_cat: uint,
-        pub hated_dog: uint
-    }
-
-    #[deriving(Clone)]
-    pub enum Voter {
-        DogPerson(DogLover),
-        CatPerson(CatLover)
+    pub struct Voter {
+        pub favorite_species: Species,
+        pub dog_vote: uint,
+        pub cat_vote: uint
     }
     
     impl Voter {
-        pub fn is_compatible(&self, other_voter: &Voter) -> bool {
-            match *self {
-                DogPerson(dog_lover_self) => match *other_voter {
-                    DogPerson(..) => true,
-                    CatPerson(cat_lover_other) => {
-                        dog_lover_self.favorite_dog != cat_lover_other.hated_dog
-                        && dog_lover_self.hated_cat != cat_lover_other.favorite_cat
-                    }
-                },
-                CatPerson(cat_lover_self) => match *other_voter {
-                    CatPerson(..) => true,
-                    DogPerson(dog_lover_other) => {
-                        dog_lover_other.favorite_dog != cat_lover_self.hated_dog
-                        && dog_lover_other.hated_cat != cat_lover_self.favorite_cat
-                    }
-                }
-            }
+        pub fn is_compatible(&self, other: &Voter) -> bool {
+            self.favorite_species != other.favorite_species && (
+                self.dog_vote == other.dog_vote || self.cat_vote == other.cat_vote
+            )
+        }
+        
+        pub fn is_cat_person(&self) -> bool {
+            self.favorite_species == Cat
         }
     }
     
-    #[deriving(PartialEq)]
-    enum Species {
+    #[deriving(PartialEq, Clone)]
+    pub enum Species {
         Dog,
         Cat
     }
@@ -102,7 +82,7 @@ pub mod voter_input {
             return get_voter();
         }
         
-        let favorite_pet = match get_pet(split[0]) {
+        let favorite_pet = match read_pet(split[0]) {
             Some(pet) => pet,
             None      => {
                 println!("Incorrect vote! Try again.");
@@ -111,7 +91,7 @@ pub mod voter_input {
             }
         };
         
-        let hated_pet = match get_pet(split[1]) {
+        let least_favorite_pet = match read_pet(split[1]) {
             Some(pet) => pet,
             None      => {
                 println!("Incorrect vote! Try again.");
@@ -120,19 +100,26 @@ pub mod voter_input {
             }
         };
         
-        if favorite_pet.species == hated_pet.species {
+        if favorite_pet.species == least_favorite_pet.species {
             println!("Incorrect vote! Try again.");
             
             return get_voter();
         }
     
-        match favorite_pet.species {
-            Dog => DogPerson ( DogLover { favorite_dog: favorite_pet.number, hated_cat: hated_pet.number } ),
-            Cat => CatPerson ( CatLover { favorite_cat: favorite_pet.number, hated_dog: hated_pet.number } )
-        }
+        Voter {
+            favorite_species: favorite_pet.species,
+            cat_vote: match favorite_pet.species {
+                Cat => favorite_pet.number,
+                Dog => least_favorite_pet.number
+            },
+            dog_vote: match favorite_pet.species {
+                Dog => favorite_pet.number,
+                Cat => least_favorite_pet.number
+            }
+       }
     }
     
-    fn get_pet(code: &str) -> Option<Pet> {
+    fn read_pet(code: &str) -> Option<Pet> {
         if code.len() < 2 {
             return None;
         }
