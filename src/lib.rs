@@ -10,8 +10,8 @@ pub mod voter_input {
     
     impl Voter {
         pub fn is_compatible(&self, other: &Voter) -> bool {
-            self.favorite_species != other.favorite_species && (
-                self.dog_vote == other.dog_vote || self.cat_vote == other.cat_vote
+            self.favorite_species == other.favorite_species || (
+                self.dog_vote != other.dog_vote && self.cat_vote != other.cat_vote
             )
         }
         
