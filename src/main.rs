@@ -36,7 +36,5 @@ fn main() {
     
     let maximum_matching_size = bipartite_matchings::get_max_matching_size(&graph);
     
-    println!("Size of maximum matching: {}", maximum_matching_size);
-    
     println!("Maximum satisfied voters: {}", voter_list.len() - maximum_matching_size);
 }

@@ -261,8 +261,6 @@ pub mod bipartite_matchings {
         for &edge in unmatched_edges {
             let (_, col) = edge;
             
-            println!("Unmatched edge {}", edge);
-            
             trace.push(edge);
             
             match augment_column(graph, matching, trace, col) {
@@ -280,12 +278,9 @@ pub mod bipartite_matchings {
     
     fn augment_column(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, column: uint) -> Option<EdgeSet> {
         let collapsed_trace = collapse_trace(trace);
-        
         let matched_columns: TreeSet<uint> = matching.iter().map(|&(row, col)| col).collect();
     
-        if ! matched_columns.contains(&column) {
-            println!("Found augmenting path!");
-        
+        if ! matched_columns.contains(&column) {        
             return Some(trace_to_set(trace));
         }
         
@@ -321,8 +316,6 @@ pub mod bipartite_matchings {
         let unmatched_rows = get_unmatched_rows(graph, matching);
         let mut trace: Vec<Edge> = Vec::new();
         
-        println!("Unmatched rows: {}", unmatched_rows.as_slice());
-        
         for row in unmatched_rows.iter() {
             match augment_row(graph, matching, &mut trace, *row) {
                 Some(path) => {
@@ -340,8 +333,6 @@ pub mod bipartite_matchings {
     fn max_matching_size(graph: &BipartiteGraph, matching: &EdgeSet) -> uint {    
         match get_augmenting_path(graph, matching) {
             None       => {
-                println!("Maximum matching: {}", matching);
-            
                 matching.len()
             },
             Some(path) => {
