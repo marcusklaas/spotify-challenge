@@ -150,17 +150,16 @@ pub mod bipartite_matchings {
     impl BipartiteGraph {
         pub fn from_closure<R, C, T: Iterator<R>, U: Iterator<C>>(rows: &mut T, columns: &mut U, closure: |&R, &C| -> bool) -> BipartiteGraph {
             let mut vec: Vec<bool> = Vec::new();
-            let row_set: Vec<R> = rows.collect();
             let column_set: Vec<C> = columns.collect();
             
-            for row in row_set.iter() {
+            for row in *rows {
                 for col in column_set.iter() {
-                    vec.push(closure(row, col));
+                    vec.push(closure(&row, col));
                 }
             }
             
             BipartiteGraph {
-                rows: row_set.len(),
+                rows: vec.len()/ column_set.len(),
                 columns: column_set.len(),
                 incidence_matrix: vec
             }
@@ -199,13 +198,7 @@ pub mod bipartite_matchings {
     }
     
     fn trace_to_set(trace: &Vec<Edge>) -> EdgeSet {
-        let mut set = TreeSet::new();
-        
-        for edge in trace.iter() {
-            set.insert(*edge);
-        }
-        
-        set
+        trace.iter().map(|&x| x).collect()
     }
     
     fn augment_row(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, row: uint) -> Option<EdgeSet> {
@@ -273,9 +266,7 @@ pub mod bipartite_matchings {
     }
     
     fn get_augmenting_path(graph: &BipartiteGraph, matching: &EdgeSet) -> Option<EdgeSet> {
-        let unmatched_rows = get_unmatched_rows(graph, matching);
-        
-        match unmatched_rows.iter()
+        match get_unmatched_rows(graph, matching).iter()
           .map(|&row| try_augmenting_path(graph, matching, row))
           .find(|x| x.is_some()) {
             Some(x) => x,
