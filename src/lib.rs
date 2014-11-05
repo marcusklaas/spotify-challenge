@@ -148,36 +148,22 @@ pub mod bipartite_matchings {
     }
     
     impl BipartiteGraph {
-        pub fn new(rows: uint, columns: uint) -> BipartiteGraph {
-            BipartiteGraph {
-                rows: rows,
-                columns: columns,
-                incidence_matrix: Vec::from_elem(rows * columns, false)
-            }
-        }
-        
         pub fn from_closure<R, C, T: Iterator<R>, U: Iterator<C>>(rows: &mut T, columns: &mut U, closure: |&R, &C| -> bool) -> BipartiteGraph {
             let mut vec: Vec<bool> = Vec::new();
+            let row_set: Vec<R> = rows.collect();
+            let column_set: Vec<C> = columns.collect();
             
-            let mut row_count = 0u;
-            
-            for row in *rows {                
-                for col in *columns {
-                    vec.push(closure(&row, &col));
+            for row in row_set.iter() {
+                for col in column_set.iter() {
+                    vec.push(closure(row, col));
                 }
-            
-                row_count += 1;
             }
             
             BipartiteGraph {
-                rows: row_count,
-                columns: 5,
+                rows: row_set.len(),
+                columns: column_set.len(),
                 incidence_matrix: vec
             }
-        }
-        
-        pub fn set_edge(&mut self, i: uint, j: uint, edginess: bool) {
-            *self.incidence_matrix.get_mut(self.columns * i + j) = edginess;
         }
         
         fn has_edge(&self, i: uint, j: uint) -> bool {
@@ -227,7 +213,7 @@ pub mod bipartite_matchings {
         let (_, columns) = graph.get_dimensions();
         
         let unvisited_neighbours = range(0, columns)
-                                .filter(|col| graph.has_edge(row, *col) && !visited_columns.contains(col));
+            .filter(|col| graph.has_edge(row, *col) && !visited_columns.contains(col));
                                 
         let edge_set: TreeSet<Edge> = unvisited_neighbours.map(|col| (row, col)).collect();
         
@@ -262,8 +248,7 @@ pub mod bipartite_matchings {
         let (rows, _) = graph.get_dimensions();
         
         let visited_neighbours = range(0, rows)
-                                .filter(|row| graph.has_edge(*row, column))
-                                .filter(|row| ! visited_rows.contains(row));
+            .filter(|row| graph.has_edge(*row, column) && ! visited_rows.contains(row));
                                 
         let edge_set: TreeSet<Edge> = visited_neighbours.map(|row| (row, column)).collect();
         
