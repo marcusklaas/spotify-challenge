@@ -15,9 +15,8 @@ fn main() {
     
     let dog_lovers: Vec<Voter> = voter_list.iter().filter(|&x| !x.is_cat_person()).map(|&x| x).collect();
     let cat_lovers: Vec<Voter> = voter_list.iter().filter(|&x| x.is_cat_person()).map(|&x| x).collect();
-    let mut vec: Vec<bool> = Vec::new();
     
-    let mut graph = bipartite_matchings::BipartiteGraph::new(dog_lovers.len(), cat_lovers.len(), &mut vec);
+    let mut graph = bipartite_matchings::BipartiteGraph::new(dog_lovers.len(), cat_lovers.len());
     
     for (dog_index, dog) in dog_lovers.iter().enumerate() {
         for (cat_index, cat) in cat_lovers.iter().enumerate() {

@@ -133,54 +133,43 @@ pub mod voter_input {
 pub mod bipartite_matchings {
     use std::collections::TreeSet;
     
-    pub struct BipartiteGraph<'a> {
+    pub struct BipartiteGraph {
         rows: uint,
         columns: uint,
-        incidence_matrix: &'a mut [bool]
+        incidence_matrix: Vec<bool>
     }
     
-    impl<'a> BipartiteGraph<'a> {
-        pub fn new<'a>(rows: uint, columns: uint, vec: &'a mut Vec<bool>) -> BipartiteGraph<'a> {
-            vec.clear();
-            
-            for _ in range(0, rows * columns) {
-                vec.push(false);
-            }
-        
+    impl BipartiteGraph {
+        pub fn new(rows: uint, columns: uint) -> BipartiteGraph {
             BipartiteGraph {
                 rows: rows,
                 columns: columns,
-                incidence_matrix: vec.as_mut_slice()
+                incidence_matrix: Vec::from_elem(rows * columns, false)
             }
         }
         
-        pub fn from_closure<R, C, T: Clone + Iterator<R>, U: Clone + Iterator<C>>(rows: &T, columns: &U, closure: |&R, &C| -> bool, vec: &'a mut Vec<bool>) -> BipartiteGraph<'a> {
-            vec.clear();
+        pub fn from_closure<R, C, T: Iterator<R>, U: Iterator<C>>(rows: &mut T, columns: &mut U, closure: |&R, &C| -> bool) -> BipartiteGraph {
+            let mut vec: Vec<bool> = Vec::new();
             
-            let mut row_iterator = rows.clone();
             let mut row_count = 0u;
             
-            for row in row_iterator {
-                let mut column_iterator = columns.clone();
-                
-                for col in column_iterator {
+            for row in *rows {                
+                for col in *columns {
                     vec.push(closure(&row, &col));
                 }
             
                 row_count += 1;
             }
             
-            let column_count = columns.clone().count();
-            
             BipartiteGraph {
                 rows: row_count,
-                columns: column_count,
-                incidence_matrix: vec.as_mut_slice()
+                columns: 5,
+                incidence_matrix: vec
             }
         }
         
         pub fn set_edge(&mut self, i: uint, j: uint, edginess: bool) {
-            self.incidence_matrix[self.columns * i + j] = edginess;
+            *self.incidence_matrix.get_mut(self.columns * i + j) = edginess;
         }
         
         fn has_edge(&self, i: uint, j: uint) -> bool {
