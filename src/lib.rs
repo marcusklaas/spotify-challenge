@@ -49,14 +49,22 @@ pub mod voter_input {
     }
     
     // todo: only accept pets with number at most number of cats/ dogs
-    pub fn get_voter_list(voter_count: uint) -> Vec<Voter> {
-        let mut voter_list = Vec::new();
+    pub fn get_voter_list(voter_count: uint) -> (Vec<Voter>, Vec<Voter>) {
+        let mut dog_lovers = Vec::new();
+        let mut cat_lovers = Vec::new();
         
         for _ in range(0, voter_count) {
-            voter_list.push(get_voter());
+            let voter = get_voter();
+        
+            let list = match voter.favorite_species {
+                Dog => &mut dog_lovers,
+                Cat => &mut cat_lovers
+            };
+        
+            list.push(voter);
         }
         
-        voter_list
+        (cat_lovers, dog_lovers)
     }
 
     fn get_voter() -> Voter {
@@ -245,7 +253,7 @@ pub mod bipartite_matchings {
     
     fn augment_column(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, column: uint) -> Option<EdgeSet> {
         let visited_rows = collapse_trace(trace, |&(x, _)| x);
-        let matched_columns: TreeSet<uint> = matching.iter().map(|&(row, col)| col).collect();
+        let matched_columns: TreeSet<uint> = matching.iter().map(|&(_, col)| col).collect();
     
         if ! matched_columns.contains(&column) {
             return Some(trace_to_set(trace));

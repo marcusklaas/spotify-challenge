@@ -11,10 +11,7 @@ fn main() {
         Ok(triple) => triple
     };
     
-    let voter_list: Vec<voter_input::Voter> = voter_input::get_voter_list(voter_count);
-    
-    let dog_lovers: Vec<Voter> = voter_list.iter().filter(|&x| !x.is_cat_person()).map(|&x| x).collect();
-    let cat_lovers: Vec<Voter> = voter_list.iter().filter(|&x| x.is_cat_person()).map(|&x| x).collect();
+    let (dog_lovers, cat_lovers) = voter_input::get_voter_list(voter_count);
     
     let mut graph = bipartite_matchings::BipartiteGraph::new(dog_lovers.len(), cat_lovers.len());
     
@@ -26,5 +23,5 @@ fn main() {
     
     let maximum_matching_size = bipartite_matchings::get_max_matching_size(&graph);
     
-    println!("Maximum satisfied voters: {}", voter_list.len() - maximum_matching_size);
+    println!("{}", dog_lovers.len() + cat_lovers.len() - maximum_matching_size);
 }
