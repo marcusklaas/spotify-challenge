@@ -159,10 +159,6 @@ pub mod bipartite_matchings {
         }
     }
     
-    trait SymmetricDifferenceSet {
-        fn new_symmetric_difference(&self, other: &Self) -> Self;
-    }
-    
     type Edge = (uint, uint);
     type EdgeSet = TreeSet<Edge>;
     

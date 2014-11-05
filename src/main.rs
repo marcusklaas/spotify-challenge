@@ -1,7 +1,6 @@
 extern crate spotify;
 
 use spotify::voter_input;
-use spotify::voter_input::Voter;
 use spotify::bipartite_matchings;
 use spotify::bipartite_matchings::BipartiteGraph;
 
