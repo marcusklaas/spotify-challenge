@@ -31,21 +31,15 @@ pub mod voter_input {
         }
     }
     
-    pub fn get_parameters() -> Result<(uint, uint, uint), String> {
+    pub fn get_parameters() -> Option<(uint, uint, uint)> {
         let input: String = io::stdin().read_line().ok().expect("Failed to read line");
-        let split: Vec<&str> = input.as_slice().trim().split(' ').collect();
+        let split = input.as_slice().trim().split(' ');
+        let parameters: Vec<Option<uint>> = split.map(|x| from_str::<uint>(x.as_slice())).collect();
         
-        if split.len() != 3 {
-            return Err("Incorrect number of arguments!".to_string());
+        match parameters.len() < 3 || parameters.iter().any(|x| x.is_none()) {
+            true  => None,
+            false => Some((parameters[0].unwrap(), parameters[1].unwrap(), parameters[2].unwrap()))
         }
-        
-        let parameters: Vec<Option<uint>> = split.iter().map(|&x| from_str::<uint>(x.as_slice())).collect();
-        
-        if parameters.iter().any(|&x| x == None) {
-            return Err("Input were not valid non-negative numbers!".to_string());
-        }
-        
-        Ok((parameters[0].unwrap(), parameters[1].unwrap(), parameters[2].unwrap()))
     }
     
     // todo: only accept pets with number at most number of cats/ dogs

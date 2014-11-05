@@ -7,8 +7,8 @@ use spotify::bipartite_matchings::BipartiteGraph;
 
 fn main() {
     let (cat_count, dog_count, voter_count) = match voter_input::get_parameters() {
-        Err(why) => fail!(why),
-        Ok(triple) => triple
+        None         => fail!("Incorrect parameters"),
+        Some(triple) => triple
     };
     
     let (dog_lovers, cat_lovers) = voter_input::get_voter_list(voter_count);
