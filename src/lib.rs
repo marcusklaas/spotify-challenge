@@ -68,50 +68,41 @@ pub mod voter_input {
     }
 
     fn get_voter() -> Voter {
-        let input: String = io::stdin().read_line().ok().expect("Failed to read line");
-        let split: Vec<&str> = input.as_slice().trim().split(' ').collect();
-        
-        if split.len() != 2 {
-            println!("Incorrect vote! Try again.");
-            
-            return get_voter();
-        }
-        
-        let favorite_pet = match read_pet(split[0]) {
-            Some(pet) => pet,
-            None      => {
+        match read_voter() {
+            Some(voter) => voter,
+            None        => {
                 println!("Incorrect vote! Try again.");
-            
-                return get_voter();
+                get_voter()
             }
-        };
-        
-        let least_favorite_pet = match read_pet(split[1]) {
-            Some(pet) => pet,
-            None      => {
-                println!("Incorrect vote! Try again.");
-            
-                return get_voter();
-            }
-        };
-        
-        if favorite_pet.species == least_favorite_pet.species {
-            println!("Incorrect vote! Try again.");
-            
-            return get_voter();
         }
+    }
     
-        Voter {
-            favorite_species: favorite_pet.species,
-            cat_vote: match favorite_pet.species {
-                Cat => favorite_pet.number,
-                Dog => least_favorite_pet.number
-            },
-            dog_vote: match favorite_pet.species {
-                Dog => favorite_pet.number,
-                Cat => least_favorite_pet.number
-            }
-       }
+    fn read_voter() -> Option<Voter> {
+        let input: String = io::stdin().read_line().ok().expect("Failed to read line");
+        let split = input.as_slice().trim().split(' ');        
+        let pets: Vec<Option<Pet>> = split.map(read_pet).collect();
+        
+        if pets.len() != 2 || pets.iter().any(|x| x.is_none()) {
+            return None;
+        }
+        
+        let real_pets: Vec<Pet> = pets.iter().map(|x| x.unwrap()).collect();
+        let favorite_species = real_pets[0].species;
+        
+        match favorite_species == real_pets[1].species {
+            false => Some(Voter{
+                favorite_species: favorite_species,
+                cat_vote: match favorite_species {
+                    Cat => real_pets[0].number,
+                    Dog => real_pets[1].number
+                },
+                dog_vote: match favorite_species {
+                    Dog => real_pets[0].number,
+                    Cat => real_pets[1].number
+                }
+            }),
+            true => None
+        }
     }
     
     fn read_pet(code: &str) -> Option<Pet> {
