@@ -274,20 +274,19 @@ pub mod bipartite_matchings {
     
     fn get_augmenting_path(graph: &BipartiteGraph, matching: &EdgeSet) -> Option<EdgeSet> {
         let unmatched_rows = get_unmatched_rows(graph, matching);
+        
+        match unmatched_rows.iter()
+          .map(|&row| try_augmenting_path(graph, matching, row))
+          .find(|x| x.is_some()) {
+            Some(x) => x,
+            None    => None
+        }
+    }
+    
+    fn try_augmenting_path(graph: &BipartiteGraph, matching: &EdgeSet, row: uint) -> Option<EdgeSet> {
         let mut trace: Vec<Edge> = Vec::new();
         
-        for row in unmatched_rows.iter() {
-            match augment_row(graph, matching, &mut trace, *row) {
-                Some(path) => {
-                    return Some(path);
-                },
-                None => {
-                    trace.clear();
-                }
-            }
-        }
-      
-        None
+        augment_row(graph, matching, &mut trace, row)
     }
     
     fn max_matching_size(graph: &BipartiteGraph, matching: &EdgeSet) -> uint {    
@@ -296,11 +295,9 @@ pub mod bipartite_matchings {
                 matching.len()
             },
             Some(path) => {
-                let mut new_matching: EdgeSet = TreeSet::new();
-                
-                for x in matching.symmetric_difference(&path) {
-                    new_matching.insert(x.clone());
-                }
+                let new_matching: EdgeSet = matching.symmetric_difference(&path)
+                        .map(|x| x.clone())
+                        .collect();
             
                 max_matching_size(graph, &new_matching)
             }
