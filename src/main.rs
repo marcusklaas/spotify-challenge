@@ -1,7 +1,6 @@
 extern crate spotify;
 
 use spotify::voter_input;
-use spotify::bipartite_matchings;
 use spotify::bipartite_matchings::BipartiteGraph;
 
 fn main() {
@@ -18,7 +17,5 @@ fn main() {
         |dog, cat| ! dog.is_compatible(*cat)
     );
     
-    let maximum_matching_size = bipartite_matchings::get_max_matching_size(&graph);
-    
-    println!("{}", dog_lovers.len() + cat_lovers.len() - maximum_matching_size);
+    println!("{}", dog_lovers.len() + cat_lovers.len() - graph.get_max_matching_size());
 }

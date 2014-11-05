@@ -1,7 +1,7 @@
 pub mod voter_input {
     use std::io;
 
-    #[deriving(PartialEq, Clone)]
+    #[deriving(PartialEq)]
     pub enum Species {
         Dog,
         Cat
@@ -11,12 +11,11 @@ pub mod voter_input {
         species: Species,
         number: uint
     }
-
-    #[deriving(Clone)]
+    
     pub struct Voter {
-        pub favorite_species: Species,
-        pub dog_vote: uint,
-        pub cat_vote: uint
+        favorite_species: Species,
+        dog_vote: uint,
+        cat_vote: uint
     }
     
     impl Voter {
@@ -50,12 +49,11 @@ pub mod voter_input {
         for _ in range(0, voter_count) {
             let voter = get_voter();
         
-            let list = match voter.favorite_species {
+            match voter.favorite_species {
                 Dog => &mut dog_lovers,
                 Cat => &mut cat_lovers
-            };
-        
-            list.push(voter);
+            }
+              .push(voter);
         }
         
         (cat_lovers, dog_lovers)
@@ -107,16 +105,12 @@ pub mod voter_input {
         let species: Species = match code.char_at(0) {
             'C' => Cat,
             'D' => Dog,
-            _   => {
-                return None;
-            }
+            _   => { return None; }
         };
     
         let number: uint = match from_str(code.slice_from(1)) {
             Some(x) => x,
-            None    => {
-                return None;
-            }
+            None    => { return None; }
         };
     
         Some( Pet { species: species, number: number } )
@@ -125,6 +119,56 @@ pub mod voter_input {
 
 pub mod bipartite_matchings {
     use std::collections::TreeSet;
+    
+    type Vertex = uint;
+    type Edge = (Vertex, Vertex);
+    type EdgeSet = TreeSet<Edge>;
+    
+    struct Path {
+        starting_row: Vertex,
+        trace: Vec<Edge>
+    }
+    
+    impl Path {
+        fn new(start: Vertex) -> Path {
+            Path {
+                starting_row: start,
+                trace: Vec::new()
+            }
+        }
+    
+        fn get_current(&self) -> Vertex {
+            let path_length = self.trace.len();
+        
+            match path_length > 0 {
+                true  => {
+                    let (row, col) = self.trace[path_length - 1];
+                    
+                    match self.is_odd_length() {
+                        true  => col,
+                        false => row
+                    }
+                },
+                false => self.starting_row
+            }
+        }
+        
+        fn is_odd_length(&self) -> bool {
+            self.trace.len() % 2 == 1
+        }
+        
+        fn add_edge(&mut self, edge: Edge) {
+            self.trace.push(edge);
+        }
+        
+        fn remove_edge(&mut self) {
+            self.trace.pop();
+        }
+        
+        fn get_edge_set(&self) -> EdgeSet {
+            self.trace.iter().map(|&x| x).collect()
+        }
+    }
     
     pub struct BipartiteGraph {
         rows: uint,
@@ -150,135 +194,82 @@ pub mod bipartite_matchings {
             }
         }
         
-        fn has_edge(&self, i: uint, j: uint) -> bool {
-            self.incidence_matrix[self.columns * i + j]
+        pub fn get_max_matching_size(&self) -> uint {
+            let empty_matching: EdgeSet = TreeSet::new();
+            
+            self.max_matching_size(&empty_matching)
         }
         
-        pub fn get_dimensions(&self) -> (uint, uint) {
-            (self.rows, self.columns)
-        }
-    }
-    
-    type Edge = (uint, uint);
-    type EdgeSet = TreeSet<Edge>;
-    
-    fn get_unmatched_rows(graph: &BipartiteGraph, matching: &EdgeSet) -> Vec<uint> {
-        let (rows, _) = graph.get_dimensions();
-        
-        range(0, rows).filter(|&x| !is_row_matched(graph, matching, x)).collect()
-    }
-    
-    fn is_row_matched(graph: &BipartiteGraph, matching: &EdgeSet, row: uint) -> bool {
-        let (_, columns) = graph.get_dimensions();
-        
-        range(0, columns).map(|col| (row, col)).any(|x| matching.contains(&x))
-    }
-    
-    fn collapse_trace(trace: &Vec<Edge>, closure: |&(uint, uint)| -> uint) -> TreeSet<uint> {
-        trace.iter().map(closure).collect()
-    }
-    
-    fn trace_to_set(trace: &Vec<Edge>) -> EdgeSet {
-        trace.iter().map(|&x| x).collect()
-    }
-    
-    fn augment_row(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, row: uint) -> Option<EdgeSet> {
-        let visited_columns = collapse_trace(trace, |&(_, y)| y);        
-        let (_, columns) = graph.get_dimensions();
-        
-        let unvisited_neighbours = range(0, columns)
-            .filter(|col| graph.has_edge(row, *col) && !visited_columns.contains(col));
-                                
-        let edge_set: TreeSet<Edge> = unvisited_neighbours.map(|col| (row, col)).collect();
-        
-        let mut unmatched_edges = edge_set.difference(matching);
-        
-        for &edge in unmatched_edges {
-            let (_, col) = edge;
-            
-            trace.push(edge);
-            
-            match augment_column(graph, matching, trace, col) {
+        fn max_matching_size(&self, matching: &EdgeSet) -> uint {    
+            match self.get_augmenting_path(matching) {
+                None       => { matching.len() },
                 Some(path) => {
-                    return Some(path);
-                },
-                None => {
-                    trace.pop();
+                    let new_matching: EdgeSet = matching.symmetric_difference(&path)
+                      .map(|&x| x)
+                      .collect();
+                
+                    self.max_matching_size(&new_matching)
                 }
             }
         }
-    
-        None
-    }
-    
-    fn augment_column(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, column: uint) -> Option<EdgeSet> {
-        let visited_rows = collapse_trace(trace, |&(x, _)| x);
-        let matched_columns: TreeSet<uint> = matching.iter().map(|&(_, col)| col).collect();
-    
-        if ! matched_columns.contains(&column) {
-            return Some(trace_to_set(trace));
+        
+        fn get_augmenting_path(&self, matching: &EdgeSet) -> Option<EdgeSet> {
+            match self.get_unmatched_rows(matching).iter()
+              .map(|&row| self.try_augmenting_path(matching, row))
+              .find(|x| x.is_some()) {
+                Some(x) => x,
+                None    => None
+            }
         }
         
-        let (rows, _) = graph.get_dimensions();
-        
-        let visited_neighbours = range(0, rows)
-            .filter(|row| graph.has_edge(*row, column) && ! visited_rows.contains(row));
-                                
-        let edge_set: TreeSet<Edge> = visited_neighbours.map(|row| (row, column)).collect();
-        
-        let mut matched_edges = edge_set.intersection(matching);
-        
-        for &edge in matched_edges {
-            let (row, _) = edge;
+        fn try_augmenting_path(&self, matching: &EdgeSet, row: Vertex) -> Option<EdgeSet> {
+            let mut path = Path::new(row);
             
-            trace.push(edge);
+            self.search_path(matching, &mut path)
+        }
+        
+        fn search_path(&self, matching: &EdgeSet, path: &mut Path) -> Option<EdgeSet> {
+            let current = path.get_current();
+            let is_column = path.is_odd_length();
             
-            match augment_row(graph, matching, trace, row) {
-                Some(path) => {
-                    return Some(path);
-                },
-                None => {
-                    trace.pop();
+            if is_column && matching.iter().map(|&(_, col)| col).find(|&x| x == current).is_none() {
+                return Some(path.get_edge_set());
+            }
+            
+            let edges = self.get_edges(current, is_column);
+            let mut eligible_edges = edges.iter().filter(|&x| matching.contains(x) == is_column);
+            
+            for &edge in eligible_edges {
+                path.add_edge(edge);
+                
+                match self.search_path(matching, path) {
+                    Some(new_path) => { return Some(new_path); },
+                    None           => { path.remove_edge(); }
                 }
             }
-        }
-    
-        None
-    }
-    
-    fn get_augmenting_path(graph: &BipartiteGraph, matching: &EdgeSet) -> Option<EdgeSet> {
-        match get_unmatched_rows(graph, matching).iter()
-          .map(|&row| try_augmenting_path(graph, matching, row))
-          .find(|x| x.is_some()) {
-            Some(x) => x,
-            None    => None
-        }
-    }
-    
-    fn try_augmenting_path(graph: &BipartiteGraph, matching: &EdgeSet, row: uint) -> Option<EdgeSet> {
-        let mut trace: Vec<Edge> = Vec::new();
         
-        augment_row(graph, matching, &mut trace, row)
-    }
-    
-    fn max_matching_size(graph: &BipartiteGraph, matching: &EdgeSet) -> uint {    
-        match get_augmenting_path(graph, matching) {
-            None       => {
-                matching.len()
-            },
-            Some(path) => {
-                let new_matching: EdgeSet = matching.symmetric_difference(&path)
-                        .map(|x| x.clone())
-                        .collect();
-            
-                max_matching_size(graph, &new_matching)
+            None
+        }
+        
+        fn get_unmatched_rows(&self, matching: &EdgeSet) -> Vec<Vertex> {
+            range(0, self.rows)
+              .filter(|&x| !self.is_row_matched(matching, x))
+              .collect()
+        }
+        
+        fn is_row_matched(&self, matching: &EdgeSet, row: Vertex) -> bool {
+            range(0, self.columns)
+              .map(|col| (row, col))
+              .any(|x| matching.contains(&x))
+        }
+        
+        fn get_edges(&self, node: Vertex, is_column: bool) -> Vec<Edge> {
+            match is_column {
+                true  => range(0, self.rows).map(|x| (x, node)),
+                false => range(0, self.columns).map(|x| (node, x))
             }
+              .filter(|&(row, col)| self.incidence_matrix[row * self.columns + col])
+              .collect()
         }
-    }
-    
-    pub fn get_max_matching_size(graph: &BipartiteGraph) -> uint {
-        let empty_matching: EdgeSet = TreeSet::new();
-        
-        max_matching_size(graph, &empty_matching)
     }
 }
