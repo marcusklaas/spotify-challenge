@@ -211,15 +211,8 @@ pub mod bipartite_matchings {
         range(0, columns).map(|col| (row, col)).any(|x| matching.contains(&x))
     }
     
-    fn collapse_trace(trace: &Vec<Edge>) -> TreeSet<uint> {
-        let mut result: TreeSet<uint> = TreeSet::new();
-        
-        for (row, col) in trace.iter().map(|&x| x) {
-            result.insert(row);
-            result.insert(col);
-        }
-        
-        result
+    fn collapse_trace(trace: &Vec<Edge>, closure: |&(uint, uint)| -> uint) -> TreeSet<uint> {
+        trace.iter().map(closure).collect()
     }
     
     fn trace_to_set(trace: &Vec<Edge>) -> EdgeSet {
@@ -233,13 +226,11 @@ pub mod bipartite_matchings {
     }
     
     fn augment_row(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, row: uint) -> Option<EdgeSet> {
-        let collapsed_trace = collapse_trace(trace);
-        
+        let visited_columns = collapse_trace(trace, |&(_, y)| y);        
         let (_, columns) = graph.get_dimensions();
         
         let unvisited_neighbours = range(0, columns)
-                                .filter(|col| graph.has_edge(row, *col))
-                                .filter(|col| !collapsed_trace.contains(col));
+                                .filter(|col| graph.has_edge(row, *col) && !visited_columns.contains(col));
                                 
         let edge_set: TreeSet<Edge> = unvisited_neighbours.map(|col| (row, col)).collect();
         
@@ -264,10 +255,10 @@ pub mod bipartite_matchings {
     }
     
     fn augment_column(graph: &BipartiteGraph, matching: &EdgeSet, trace: &mut Vec<Edge>, column: uint) -> Option<EdgeSet> {
-        let collapsed_trace = collapse_trace(trace);
+        let visited_rows = collapse_trace(trace, |&(x, _)| x);
         let matched_columns: TreeSet<uint> = matching.iter().map(|&(row, col)| col).collect();
     
-        if ! matched_columns.contains(&column) {        
+        if ! matched_columns.contains(&column) {
             return Some(trace_to_set(trace));
         }
         
@@ -275,7 +266,7 @@ pub mod bipartite_matchings {
         
         let visited_neighbours = range(0, rows)
                                 .filter(|row| graph.has_edge(*row, column))
-                                .filter(|row| collapsed_trace.contains(row));
+                                .filter(|row| ! visited_rows.contains(row));
                                 
         let edge_set: TreeSet<Edge> = visited_neighbours.map(|row| (row, column)).collect();
         
