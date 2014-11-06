@@ -30,24 +30,31 @@ pub mod voter_input {
         }
     }
     
-    pub fn get_parameters() -> Option<(uint, uint, uint)> {
-        let input: String = io::stdin().read_line().ok().expect("Failed to read line");
+    pub fn get_parameters(buffer: &mut io::Buffer) -> Option<(uint, uint, uint)> {
+        let input = buffer.read_line().ok().expect("Failed to read line");
         let split = input.as_slice().trim().split(' ');
         let parameters: Vec<Option<uint>> = split.map(|x| from_str::<uint>(x.as_slice())).collect();
         
-        match parameters.len() < 3 || parameters.iter().any(|x| x.is_none()) {
+        if parameters.len() < 3 || parameters.iter().any(|x| x.is_none()) {
+            return None;
+        }
+        
+        let cat_count = parameters[0].unwrap();
+        let dog_count = parameters[1].unwrap();
+        let voter_count = parameters[2].unwrap();
+        
+        match cat_count < 1 || dog_count > 100 || voter_count > 500 {
             true  => None,
-            false => Some((parameters[0].unwrap(), parameters[1].unwrap(), parameters[2].unwrap()))
+            false => Some((cat_count, dog_count, voter_count))
         }
     }
     
-    // todo: only accept pets with number at most number of cats/ dogs
-    pub fn get_voter_list(voter_count: uint) -> (Vec<Voter>, Vec<Voter>) {
+    pub fn get_voter_list(buffer: &mut io::Buffer, cat_count: uint, dog_count: uint, voter_count: uint) -> (Vec<Voter>, Vec<Voter>) {
         let mut dog_lovers = Vec::new();
         let mut cat_lovers = Vec::new();
         
         for _ in range(0, voter_count) {
-            let voter = get_voter();
+            let voter = get_voter(buffer, cat_count, dog_count);
         
             match voter.favorite_species {
                 Dog => &mut dog_lovers,
@@ -59,20 +66,20 @@ pub mod voter_input {
         (cat_lovers, dog_lovers)
     }
 
-    fn get_voter() -> Voter {
-        match read_voter() {
+    fn get_voter(buffer: &mut io::Buffer, cat_count: uint, dog_count: uint) -> Voter {
+        match read_voter(buffer, cat_count, dog_count) {
             Some(voter) => voter,
             None        => {
                 println!("Incorrect vote! Try again.");
-                get_voter()
+                get_voter(buffer, cat_count, dog_count)
             }
         }
     }
     
-    fn read_voter() -> Option<Voter> {
-        let input: String = io::stdin().read_line().ok().expect("Failed to read line");
+    fn read_voter(buffer: &mut io::Buffer, cat_count: uint, dog_count: uint) -> Option<Voter> {
+        let input = buffer.read_line().ok().expect("Failed to read line");
         let split = input.as_slice().trim().split(' ');        
-        let pets: Vec<Option<Pet>> = split.map(read_pet).collect();
+        let pets: Vec<Option<Pet>> = split.map(|x| read_pet(x, cat_count, dog_count)).collect();
         
         if pets.len() != 2 || pets.iter().any(|x| x.is_none()) {
             return None;
@@ -97,7 +104,7 @@ pub mod voter_input {
         }
     }
     
-    fn read_pet(code: &str) -> Option<Pet> {
+    fn read_pet(code: &str, cat_count: uint, dog_count: uint) -> Option<Pet> {
         if code.len() < 2 {
             return None;
         }
@@ -108,10 +115,14 @@ pub mod voter_input {
             _   => { return None; }
         };
     
-        let number: uint = match from_str(code.slice_from(1)) {
-            Some(x) => x,
-            None    => { return None; }
+        let number = match from_str::<uint>(code.slice_from(1)) {
+            Some(x) if x > 0 => x,
+            _                => { return None; }
         };
+        
+        if species == Cat && number > cat_count || species == Dog && number > dog_count {
+            return None;
+        }
     
         Some( Pet { species: species, number: number } )
     }
@@ -155,6 +166,10 @@ pub mod bipartite_matchings {
         
         fn is_odd_length(&self) -> bool {
             self.trace.len() % 2 == 1
+        }
+        
+        fn has_edge(&self, edge: Edge) -> bool {
+            self.trace.iter().find(|&x| *x == edge).is_some()
         }
         
         fn add_edge(&mut self, edge: Edge) {
@@ -214,12 +229,10 @@ pub mod bipartite_matchings {
         }
         
         fn get_augmenting_path(&self, matching: &EdgeSet) -> Option<EdgeSet> {
-            match self.get_unmatched_rows(matching).iter()
+            self.get_unmatched_rows(matching).iter()
               .map(|&row| self.try_augmenting_path(matching, row))
-              .find(|x| x.is_some()) {
-                Some(x) => x,
-                None    => None
-            }
+              .find(|x| x.is_some())
+              .unwrap_or(None)
         }
         
         fn try_augmenting_path(&self, matching: &EdgeSet, row: Vertex) -> Option<EdgeSet> {
@@ -236,11 +249,13 @@ pub mod bipartite_matchings {
                 return Some(path.get_edge_set());
             }
             
-            let edges = self.get_edges(current, is_column);
-            let mut eligible_edges = edges.iter().filter(|&x| matching.contains(x) == is_column);
+            let eligible_edges: Vec<&Edge> = self.get_edges(current, is_column)
+              .iter().filter(|&x| !path.has_edge(*x)
+                               && matching.contains(x) == is_column)
+              .collect();
             
-            for &edge in eligible_edges {
-                path.add_edge(edge);
+            for &edge in eligible_edges.iter() {
+                path.add_edge(*edge);
                 
                 match self.search_path(matching, path) {
                     Some(new_path) => { return Some(new_path); },
