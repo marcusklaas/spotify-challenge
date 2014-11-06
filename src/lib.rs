@@ -203,7 +203,7 @@ pub mod bipartite_matchings {
             }
             
             BipartiteGraph {
-                rows: vec.len()/ column_set.len(),
+                rows: vec.len()/ column_set.len(), // FIXME: division by zero!
                 columns: column_set.len(),
                 incidence_matrix: vec
             }
@@ -249,13 +249,13 @@ pub mod bipartite_matchings {
                 return Some(path.get_edge_set());
             }
             
-            let eligible_edges: Vec<&Edge> = self.get_edges(current, is_column)
+            let eligible_edges: Vec<Edge> = self.get_edges(current, is_column)
               .iter().filter(|&x| !path.has_edge(*x)
                                && matching.contains(x) == is_column)
-              .collect();
+              .map(|&x| x).collect();
             
             for &edge in eligible_edges.iter() {
-                path.add_edge(*edge);
+                path.add_edge(edge);
                 
                 match self.search_path(matching, path) {
                     Some(new_path) => { return Some(new_path); },
