@@ -194,16 +194,17 @@ pub mod bipartite_matchings {
     impl BipartiteGraph {
         pub fn from_closure<R, C, T: Iterator<R>, U: Iterator<C>>(rows: &mut T, columns: &mut U, closure: |&R, &C| -> bool) -> BipartiteGraph {
             let mut vec: Vec<bool> = Vec::new();
+            let row_set: Vec<R> = rows.collect();
             let column_set: Vec<C> = columns.collect();
             
-            for row in *rows {
+            for row in row_set.iter() {
                 for col in column_set.iter() {
-                    vec.push(closure(&row, col));
+                    vec.push(closure(row, col));
                 }
             }
             
             BipartiteGraph {
-                rows: vec.len()/ column_set.len(), // FIXME: division by zero!
+                rows: row_set.len(),
                 columns: column_set.len(),
                 incidence_matrix: vec
             }
