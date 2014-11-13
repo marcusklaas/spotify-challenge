@@ -87,7 +87,7 @@ impl BipartiteGraph {
     
     fn max_matching_size(&self, matching: &EdgeSet) -> uint {    
         match self.get_augmenting_path(matching) {
-            None       => { matching.len() },
+            None       => matching.len(),
             Some(path) => {
                 let new_matching: EdgeSet = matching.symmetric_difference(&path)
                   .map(|&x| x)
@@ -119,10 +119,8 @@ impl BipartiteGraph {
             return Some(path.get_edge_set());
         }
         
-        let eligible_edges: Vec<Edge> = self.get_edges(current, is_column)
-          .iter().filter(|&x| !path.has_edge(*x)
-                           && matching.contains(x) == is_column)
-          .map(|&x| x).collect();
+        let mut eligible_edges: Vec<Edge> = self.get_edges(current, is_column);
+        eligible_edges.retain(|x| !path.has_edge(*x) && matching.contains(x) == is_column);
         
         for &edge in eligible_edges.iter() {
             path.add_edge(edge);

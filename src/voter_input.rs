@@ -49,20 +49,7 @@ pub fn get_parameters<R: Reader>(buffer: &mut BufferedReader<R>) -> Option<(uint
 }
 
 pub fn get_voter_list<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_count: uint, voter_count: uint) -> (Vec<Voter>, Vec<Voter>) {
-    let mut dog_lovers = Vec::new();
-    let mut cat_lovers = Vec::new();
-    
-    for _ in range(0, voter_count) {
-        let voter = get_voter(buffer, cat_count, dog_count);
-    
-        match voter.favorite_species {
-            Dog => &mut dog_lovers,
-            Cat => &mut cat_lovers
-        }
-          .push(voter);
-    }
-    
-    (cat_lovers, dog_lovers)
+    Vec::from_fn(voter_count, |_| get_voter(buffer, cat_count, dog_count)).partition(|v| v.is_cat_person())
 }
 
 fn get_voter<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_count: uint) -> Voter {
