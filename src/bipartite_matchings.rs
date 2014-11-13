@@ -119,7 +119,7 @@ impl BipartiteGraph {
             return Some(path.get_edge_set());
         }
         
-        let mut eligible_edges: Vec<Edge> = self.get_edges(current, is_column);
+        let mut eligible_edges = self.get_edges(current, is_column);
         eligible_edges.retain(|x| !path.has_edge(*x) && matching.contains(x) == is_column);
         
         for &edge in eligible_edges.iter() {

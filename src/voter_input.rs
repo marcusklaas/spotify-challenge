@@ -48,8 +48,14 @@ pub fn get_parameters<R: Reader>(buffer: &mut BufferedReader<R>) -> Option<(uint
     }
 }
 
-pub fn get_voter_list<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_count: uint, voter_count: uint) -> (Vec<Voter>, Vec<Voter>) {
-    Vec::from_fn(voter_count, |_| get_voter(buffer, cat_count, dog_count)).partition(|v| v.is_cat_person())
+pub fn get_voter_list<R: Reader>(buffer: &mut BufferedReader<R>) -> (Vec<Voter>, Vec<Voter>) {
+    let (cat_count, dog_count, voter_count) = match get_parameters(buffer) {
+        None         => panic!("Incorrect parameters"),
+        Some(triple) => triple
+    };
+
+    Vec::from_fn(voter_count, |_| get_voter(buffer, cat_count, dog_count))
+      .partition(|v| v.is_cat_person())
 }
 
 fn get_voter<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_count: uint) -> Voter {
