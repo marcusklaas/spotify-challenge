@@ -1,6 +1,7 @@
 extern crate spotify;
 
 use std::io;
+use std::io::{Reader, BufferedReader};
 use spotify::voter_input;
 use spotify::bipartite_matchings::BipartiteGraph;
 
@@ -14,9 +15,9 @@ fn main() {
     }
 }
 
-fn run_test_case(buffer: &mut Buffer) {
+fn run_test_case<R: Reader>(buffer: &mut BufferedReader<R>) {
     let (cat_count, dog_count, voter_count) = match voter_input::get_parameters(buffer) {
-        None         => fail!("Incorrect parameters"),
+        None         => panic!("Incorrect parameters"),
         Some(triple) => triple
     };
     

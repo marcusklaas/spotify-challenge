@@ -1,5 +1,5 @@
 pub mod voter_input {
-    use std::io;
+    use std::io::{Reader, BufferedReader};
 
     #[deriving(PartialEq)]
     pub enum Species {
@@ -30,7 +30,7 @@ pub mod voter_input {
         }
     }
     
-    pub fn get_parameters(buffer: &mut io::Buffer) -> Option<(uint, uint, uint)> {
+    pub fn get_parameters<R: Reader>(buffer: &mut BufferedReader<R>) -> Option<(uint, uint, uint)> {
         let input = buffer.read_line().ok().expect("Failed to read line");
         let split = input.as_slice().trim().split(' ');
         let parameters: Vec<Option<uint>> = split.map(|x| from_str::<uint>(x.as_slice())).collect();
@@ -49,7 +49,7 @@ pub mod voter_input {
         }
     }
     
-    pub fn get_voter_list(buffer: &mut io::Buffer, cat_count: uint, dog_count: uint, voter_count: uint) -> (Vec<Voter>, Vec<Voter>) {
+    pub fn get_voter_list<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_count: uint, voter_count: uint) -> (Vec<Voter>, Vec<Voter>) {
         let mut dog_lovers = Vec::new();
         let mut cat_lovers = Vec::new();
         
@@ -66,7 +66,7 @@ pub mod voter_input {
         (cat_lovers, dog_lovers)
     }
 
-    fn get_voter(buffer: &mut io::Buffer, cat_count: uint, dog_count: uint) -> Voter {
+    fn get_voter<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_count: uint) -> Voter {
         match read_voter(buffer, cat_count, dog_count) {
             Some(voter) => voter,
             None        => {
@@ -76,7 +76,7 @@ pub mod voter_input {
         }
     }
     
-    fn read_voter(buffer: &mut io::Buffer, cat_count: uint, dog_count: uint) -> Option<Voter> {
+    fn read_voter<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_count: uint) -> Option<Voter> {
         let input = buffer.read_line().ok().expect("Failed to read line");
         let split = input.as_slice().trim().split(' ');        
         let pets: Vec<Option<Pet>> = split.map(|x| read_pet(x, cat_count, dog_count)).collect();
