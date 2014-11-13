@@ -1,12 +1,11 @@
 extern crate spotify;
 
-use std::io;
-use std::io::{Reader, BufferedReader};
+use std::io::{stdin, Reader, BufferedReader};
 use spotify::voter_input;
 use spotify::bipartite_matchings::BipartiteGraph;
 
 fn main() {
-    let mut buffer = io::stdin();
+    let mut buffer = stdin();
     let input = buffer.read_line().ok().expect("Could not read line!");
     let testcase_count = from_str::<uint>(input.as_slice().trim()).expect("Invalid testcase count!");
     
