@@ -1,20 +1,20 @@
 extern crate spotify;
 
-use std::io::{stdin, Reader, BufferedReader};
+use std::io::stdin;
 use spotify::voter_input::get_voter_list;
 use spotify::bipartite_matchings::BipartiteGraph;
 
 fn main() {
-    let mut buffer = box stdin();
+    let mut buffer = stdin();
     let input = buffer.read_line().ok().expect("Could not read line!");
     let testcase_count = from_str::<uint>(input.as_slice().trim()).expect("Invalid testcase count!");
     
     for _ in range(0, testcase_count) {
-        println!("{}", run_test_case(buffer));
+        println!("{}", run_test_case(&mut buffer));
     }
 }
 
-fn run_test_case(buffer: Box<Buffer>) -> uint {
+fn run_test_case<T: Buffer>(buffer: &mut T) -> uint {
     let (dog_lovers, cat_lovers) = get_voter_list(buffer);
     
     let graph = BipartiteGraph::from_closure(

@@ -1,5 +1,3 @@
-use std::io::{Reader, BufferedReader};
-
 #[deriving(PartialEq)]
 pub enum Species {
     Dog,
@@ -29,7 +27,7 @@ impl Voter {
     }
 }
 
-pub fn get_parameters<R: Reader>(buffer: &mut BufferedReader<R>) -> Option<(uint, uint, uint)> {
+pub fn get_parameters<T: Buffer>(buffer: &mut T) -> Option<(uint, uint, uint)> {
     let input = buffer.read_line().ok().expect("Failed to read line");
     let split = input.as_slice().trim().split(' ');
     let parameters: Vec<Option<uint>> = split.map(|x| from_str::<uint>(x.as_slice())).collect();
@@ -48,7 +46,7 @@ pub fn get_parameters<R: Reader>(buffer: &mut BufferedReader<R>) -> Option<(uint
     }
 }
 
-pub fn get_voter_list<R: Reader>(buffer: &mut BufferedReader<R>) -> (Vec<Voter>, Vec<Voter>) {
+pub fn get_voter_list<T: Buffer>(buffer: &mut T) -> (Vec<Voter>, Vec<Voter>) {
     let (cat_count, dog_count, voter_count) = match get_parameters(buffer) {
         None         => panic!("Incorrect parameters"),
         Some(triple) => triple
@@ -58,7 +56,7 @@ pub fn get_voter_list<R: Reader>(buffer: &mut BufferedReader<R>) -> (Vec<Voter>,
       .partition(|v| v.is_cat_person())
 }
 
-fn get_voter<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_count: uint) -> Voter {
+fn get_voter<T: Buffer>(buffer: &mut T, cat_count: uint, dog_count: uint) -> Voter {
     match read_voter(buffer, cat_count, dog_count) {
         Some(voter) => voter,
         None        => {
@@ -68,7 +66,7 @@ fn get_voter<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_cou
     }
 }
 
-fn read_voter<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_count: uint) -> Option<Voter> {
+fn read_voter<T: Buffer>(buffer: &mut T, cat_count: uint, dog_count: uint) -> Option<Voter> {
     let input = buffer.read_line().ok().expect("Failed to read line");
     let split = input.as_slice().trim().split(' ');        
     let pets: Vec<Option<Pet>> = split.map(|x| read_pet(x, cat_count, dog_count)).collect();
