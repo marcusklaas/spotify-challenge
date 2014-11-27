@@ -5,16 +5,16 @@ use spotify::voter_input::get_voter_list;
 use spotify::bipartite_matchings::BipartiteGraph;
 
 fn main() {
-    let mut buffer = stdin();
+    let mut buffer = box stdin();
     let input = buffer.read_line().ok().expect("Could not read line!");
     let testcase_count = from_str::<uint>(input.as_slice().trim()).expect("Invalid testcase count!");
     
     for _ in range(0, testcase_count) {
-        println!("{}", run_test_case(&mut buffer));
+        println!("{}", run_test_case(buffer));
     }
 }
 
-fn run_test_case<R: Reader>(buffer: &mut BufferedReader<R>) -> uint {
+fn run_test_case(buffer: Box<Buffer>) -> uint {
     let (dog_lovers, cat_lovers) = get_voter_list(buffer);
     
     let graph = BipartiteGraph::from_closure(
