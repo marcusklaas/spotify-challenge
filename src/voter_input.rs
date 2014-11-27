@@ -25,7 +25,7 @@ impl Voter {
     }
     
     pub fn is_cat_person(&self) -> bool {
-        self.favorite_species == Cat
+        self.favorite_species == Species::Cat
     }
 }
 
@@ -84,12 +84,12 @@ fn read_voter<R: Reader>(buffer: &mut BufferedReader<R>, cat_count: uint, dog_co
         false => Some(Voter{
             favorite_species: favorite_species,
             cat_vote: match favorite_species {
-                Cat => real_pets[0].number,
-                Dog => real_pets[1].number
+                Species::Cat => real_pets[0].number,
+                Species::Dog => real_pets[1].number
             },
             dog_vote: match favorite_species {
-                Dog => real_pets[0].number,
-                Cat => real_pets[1].number
+                Species::Dog => real_pets[0].number,
+                Species::Cat => real_pets[1].number
             }
         }),
         true => None
@@ -102,8 +102,8 @@ fn read_pet(code: &str, cat_count: uint, dog_count: uint) -> Option<Pet> {
     }
     
     let species: Species = match code.char_at(0) {
-        'C' => Cat,
-        'D' => Dog,
+        'C' => Species::Cat,
+        'D' => Species::Dog,
         _   => { return None; }
     };
 
@@ -112,7 +112,8 @@ fn read_pet(code: &str, cat_count: uint, dog_count: uint) -> Option<Pet> {
         _                => { return None; }
     };
     
-    if species == Cat && number > cat_count || species == Dog && number > dog_count {
+    if species == Species::Cat && number > cat_count
+     || species == Species::Dog && number > dog_count {
         return None;
     }
 
