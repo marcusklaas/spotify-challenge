@@ -1,5 +1,8 @@
 spotify-challenge
 =================
+
+[![Build Status](https://travis-ci.org/marcusklaas/spotify-challenge.svg?branch=master)](https://travis-ci.org/marcusklaas/spotify-challenge)
+
 Solution to the spotify hard programming challenge as defined on https://labs.spotify.com/puzzles/ in Rust.
 
 problem definition
