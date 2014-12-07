@@ -61,20 +61,18 @@ pub struct BipartiteGraph {
 }
 
 impl BipartiteGraph {
-    pub fn from_closure<R, C, T: Iterator<R>, U: Iterator<C>>(rows: &mut T, columns: &mut U, closure: |&R, &C| -> bool) -> BipartiteGraph {
+    pub fn from_closure<R, C>(rows: &[R], columns: &[C], closure: |&R, &C| -> bool) -> BipartiteGraph {
         let mut vec: Vec<bool> = Vec::new();
-        let row_set: Vec<R> = rows.collect();
-        let column_set: Vec<C> = columns.collect();
         
-        for row in row_set.iter() {
-            for col in column_set.iter() {
+        for row in rows.iter() {
+            for col in columns.iter() {
                 vec.push(closure(row, col));
             }
         }
         
         BipartiteGraph {
-            rows: row_set.len(),
-            columns: column_set.len(),
+            rows: rows.len(),
+            columns: columns.len(),
             incidence_matrix: vec
         }
     }
